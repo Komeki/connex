@@ -15,4 +15,4 @@
 
 Запуск программы:
 
-`watchmedo auto-restart --patterns="*.py" --recursive -- python eventmatev1.py`
+`watchmedo auto-restart --patterns="*.py" --recursive -- python connex.py`
