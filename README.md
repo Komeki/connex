@@ -1,6 +1,6 @@
-# eventmate
+# connex
 
-Запуск файла eventmatev1.py
+Запуск файла connex.py
 
 Для запуска aiogram бота на своем ПК сначала нужна сама библиотека aiogram
 
