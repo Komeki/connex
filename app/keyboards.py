@@ -1,13 +1,11 @@
 from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton,
                            InlineKeyboardButton, InlineKeyboardMarkup)
 
+# inline keyboard
+student_or_curator = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Я Студент', callback_data='its_a_student'), 
+                                                            InlineKeyboardButton(text='Я Куратор', callback_data='its_a_curator')]])
 
 # reply keyboard
 # keyboard = [[кнопка] ряды ] клавиатура
-student_curator = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Я Студент'), KeyboardButton(text='Я Куратор')],
-                                     [KeyboardButton(text='Назад')]], 
-                                     resize_keyboard=True,
-                                     input_field_placeholder='Выберите пункт меню...')
-
-# inline keyboard
-ifcurator = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Да', callback_data='cur'), InlineKeyboardButton(text='Нет', callback_data='nocur')]])
+are_you_curator = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Да'), KeyboardButton(text='Нет')]], 
+                                     resize_keyboard=True)
