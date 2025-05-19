@@ -29,17 +29,20 @@ def add_event(name, description, time, location, image_id):
     conn.commit()
     conn.close()
 
-def get_events_page(offset: int, limit: int):
+PAGE_LIMIT = 5
+def get_events_page(page: int, limit: int = PAGE_LIMIT) -> list:
     conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT id, name FROM events ORDER BY id LIMIT ? OFFSET ?", (limit, offset)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    offset = page * limit
+    try:
+        cursor.execute(
+            "SELECT * FROM events ORDER BY id DESC LIMIT ? OFFSET ?", 
+            (limit, offset)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Ошибка при получении мероприятий: {e}")
+        return []
 
 def get_events_count():
     conn = sqlite3.connect(DB_FILE)

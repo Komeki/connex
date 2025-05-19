@@ -11,7 +11,8 @@ def confirm_reg():
 def confirm_posts():
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Сохранить", callback_data="confirm_post")
+            InlineKeyboardButton(text="✅ Сохранить", callback_data="confirm_post"),
+            InlineKeyboardButton(text="❌ Не сохранять", callback_data="cancel_post")
         ]
     ]
 )

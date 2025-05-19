@@ -132,7 +132,8 @@ async def confirm_profile(callback: CallbackQuery, state: FSMContext):
     )
 
     await callback.message.answer(
-        f"Добро пожаловать",
-        reply_markup=student_main_kb, 
-        parse_mode='HTML'
+        "<b>Добро пожаловать в панель студента.</b>\n"
+        "Выберите действие с помощью кнопок ниже:",
+        reply_markup=student_main_kb,
+        parse_mode="HTML"
     )

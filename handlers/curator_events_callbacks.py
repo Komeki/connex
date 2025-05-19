@@ -5,13 +5,12 @@ from aiogram.fsm.context import FSMContext
 from utils.states import CreateEvent
 from utils.database import add_event
 
-from keyboards.inline import confirm_posts
-from keyboards.curator_reply import admin_kb
+from keyboards.inline import confirm_posts, curator_panel_events
 from keyboards.fabrics import event_list_kb, Pagination
 
 router = Router()
 
-# 1 Кнопка - Создать мероприятие
+# 1 Кнопка - 📝 Создать мероприятие
 # Введите название мероприятия
 @router.callback_query(F.data == "curator_create_event")
 async def create_event(callback: CallbackQuery, state: FSMContext):
@@ -49,22 +48,12 @@ async def event_image(message: Message, state: FSMContext):
 
     data = await state.get_data()
 
-    add_event(
-        name=data.get('name', 'Без имени'),
-        description=data.get('description', ''),
-        time=data.get('time', ''),
-        location=data.get('location', ''),
-        image_id=photo_id
-    )
-
     post_text = (
         f"<b>{data.get('name', 'Без имени')}</b>\n\n"
         f"{data.get('description', '')}\n\n"
         f"🕒 <b>Время:</b> {data.get('time', '')}\n"
         f"📍 <b>Место:</b> {data.get('location', '')}"
     )
-
-    await state.clear()
 
     # Отправляем пост с фото и текстом
     msg_post = await message.answer_photo(
@@ -82,8 +71,40 @@ async def event_image(message: Message, state: FSMContext):
         reply_markup=confirm_posts(),
         reply_to_message_id=msg_post.message_id
     )
-# Подтверждение и удаление сообщений 
+# Подтверждение и удаление сообщений - 1
 @router.callback_query(F.data == "confirm_post")
+async def confirmpost(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+
+    data = await state.get_data()
+    post_msg_id = data.get('post_msg_id')
+
+    # Удаляем сообщение с кнопкой "Сохранить пост?"
+    await callback.message.delete()
+
+    # Удаляем сообщение с постом
+    await callback.message.bot.delete_message(
+        chat_id=callback.message.chat.id,
+        message_id=post_msg_id
+    )
+    
+    add_event(
+        name=data.get('name', 'Без имени'),
+        description=data.get('description', ''),
+        time=data.get('time', ''),
+        location=data.get('location', ''),
+        image_id=data.get('photo_id', ''),
+    )
+    
+    await state.clear()
+
+    # Отправляем новое сообщение без reply_to_message_id
+    await callback.message.answer(
+        "Пост сохранен ✅",
+        reply_markup=curator_panel_events()
+    )
+# Отмена и удаление сообщений - 2
+@router.callback_query(F.data == "cancel_post")
 async def confirmpost(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
@@ -101,13 +122,16 @@ async def confirmpost(callback: CallbackQuery, state: FSMContext):
     
     # Отправляем новое сообщение без reply_to_message_id
     await callback.message.answer(
-        "Пост сохранен ✅",
-        reply_markup=admin_kb
+        "Вы отменили создание поста ❗"
+    )
+    await callback.message.answer(
+        "Меню мероприятий:",
+        reply_markup=curator_panel_events()
     )
 
 # ----------------------------------------------------------------------------
 
-# 2 Кнопка - Список мероприятий
+# 2 Кнопка - 📋 Список мероприятий
 # Сам вывод списка
 @router.callback_query(F.data == "curator_list_events")
 async def list_events(callback: CallbackQuery):
@@ -124,13 +148,15 @@ async def paginate(callback: CallbackQuery, callback_data: Pagination):
 
 # ----------------------------------------------------------------------------
 
-# 3 Кнопка - Редактирование мероприятия
+# 3 Кнопка - 📦 Выполнить рассылку
 @router.callback_query(F.data == "curator_edit_event")
 async def edit_event(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer("📦 Выполнить рассылку")
 
-# 4 Кнопка - Редактирование мероприятия
+# ----------------------------------------------------------------------------
+
+# 4 Кнопка - ❌ Удаление мероприятия
 @router.callback_query(F.data == "curator_delete_event")
 async def delete_event(callback: CallbackQuery):
     await callback.answer()
