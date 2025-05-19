@@ -7,40 +7,42 @@ from utils.database import add_event
 
 from keyboards.inline import confirm_posts
 from keyboards.curator_reply import admin_kb
+from keyboards.fabrics import event_list_kb, Pagination
 
 router = Router()
 
 # 1 Кнопка - Создать мероприятие
+# Введите название мероприятия
 @router.callback_query(F.data == "curator_create_event")
 async def create_event(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await callback.message.answer("📝 Введите название мероприятия:")
     await state.set_state(CreateEvent.name)
-
+# Введите описание мероприятия
 @router.message(CreateEvent.name)
 async def event_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await message.answer("✏️ Введите описание мероприятия:")
     await state.set_state(CreateEvent.description)
-
+# Укажите дату и время
 @router.message(CreateEvent.description)
 async def event_description(message: Message, state: FSMContext):
     await state.update_data(description=message.text)
-    await message.answer("🕒 Укажите время (например: 21 мая в 18:00):")
+    await message.answer("🕒 Укажите дату и время (например: 21 мая в 18:00):")
     await state.set_state(CreateEvent.time)
-
+# Укажите место проведения
 @router.message(CreateEvent.time)
 async def event_time(message: Message, state: FSMContext):
     await state.update_data(time=message.text)
     await message.answer("📍 Укажите место проведения:")
     await state.set_state(CreateEvent.location)
-
+# Отправьте изображение мероприятия
 @router.message(CreateEvent.location)
 async def event_location(message: Message, state: FSMContext):
     await state.update_data(location=message.text)
     await message.answer("📷 Отправьте изображение мероприятия:")
     await state.set_state(CreateEvent.image)
-
+# Отправка готового поста и запроса подтверждения
 @router.message(F.photo)
 async def event_image(message: Message, state: FSMContext):
     photo_id = message.photo[-1].file_id
@@ -80,7 +82,7 @@ async def event_image(message: Message, state: FSMContext):
         reply_markup=confirm_posts(),
         reply_to_message_id=msg_post.message_id
     )
-
+# Подтверждение и удаление сообщений 
 @router.callback_query(F.data == "confirm_post")
 async def confirmpost(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -103,17 +105,30 @@ async def confirmpost(callback: CallbackQuery, state: FSMContext):
         reply_markup=admin_kb
     )
 
+# ----------------------------------------------------------------------------
+
 # 2 Кнопка - Список мероприятий
+# Сам вывод списка
 @router.callback_query(F.data == "curator_list_events")
 async def list_events(callback: CallbackQuery):
     await callback.answer()
-    await callback.message.answer("📋 Список мероприятий")
+    await callback.message.answer(
+        "📋 Список мероприятий:",
+        reply_markup=event_list_kb(page=0)
+    )
+# Пагинация - работа кнопок перелистывания
+@router.callback_query(Pagination.filter())
+async def paginate(callback: CallbackQuery, callback_data: Pagination):
+    await callback.answer()
+    await callback.message.edit_reply_markup(reply_markup=event_list_kb(page=callback_data.page))
+
+# ----------------------------------------------------------------------------
 
 # 3 Кнопка - Редактирование мероприятия
 @router.callback_query(F.data == "curator_edit_event")
 async def edit_event(callback: CallbackQuery):
     await callback.answer()
-    await callback.message.answer("✏️ Редактирование мероприятия")
+    await callback.message.answer("📦 Выполнить рассылку")
 
 # 4 Кнопка - Редактирование мероприятия
 @router.callback_query(F.data == "curator_delete_event")

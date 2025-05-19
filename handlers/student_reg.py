@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from utils.validate import validate_full_name
 
 from keyboards import inline
+from keyboards.student_reply import student_main_kb
 
 import re
 
@@ -128,4 +129,10 @@ async def confirm_profile(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "✅ <b>Регистрация завершена!</b>",
         parse_mode="HTML"
+    )
+
+    await callback.message.answer(
+        f"Добро пожаловать",
+        reply_markup=student_main_kb, 
+        parse_mode='HTML'
     )

@@ -20,6 +20,6 @@ def curator_panel_events():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📝 Создать мероприятие", callback_data="curator_create_event")],
         [InlineKeyboardButton(text="📋 Список моих мероприятий", callback_data="curator_list_events")],
-        [InlineKeyboardButton(text="✏️ Редактировать мероприятие", callback_data="curator_edit_event")],
+        [InlineKeyboardButton(text="📦 Выполнить рассылку", callback_data="curator_edit_event")],
         [InlineKeyboardButton(text="❌ Удалить мероприятие", callback_data="curator_delete_event")],
     ])
