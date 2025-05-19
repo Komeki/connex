@@ -1,17 +1,25 @@
 import asyncio
-from aiogram import Bot, Dispatcher
 
-from app.handlers import router
-from TOKENz import token
+from TOKENZ import token
 
-async def mainfunc():
-    bot = Bot(token)
+from aiogram import Bot, Router, Dispatcher, F
+from aiogram.types import Message
+from aiogram.filters import Command, CommandObject
+from aiogram.enums import ParseMode
+
+from handlers import reg
+
+router = Router()
+
+async def main() -> None:
+    bot = Bot(token=token)
     dp = Dispatcher()
-    dp.include_router(router)
+    dp.include_routers(
+        reg.router
+    )
+
+    await bot.delete_webhook(True)
     await dp.start_polling(bot)
 
-if __name__ == '__main__':
-    try:    
-        asyncio.run(mainfunc())
-    except KeyboardInterrupt:
-        print('Бот выключен')
+if __name__ == "__main__":
+    asyncio.run(main())
