@@ -1,13 +1,8 @@
 import asyncio
 
 from TOKENZ import token
-
-from aiogram import Bot, Router, Dispatcher, F
-from aiogram.types import Message
-from aiogram.filters import Command, CommandObject
-from aiogram.enums import ParseMode
-
-from handlers import reg
+from aiogram import Bot, Router, Dispatcher
+from handlers import reg, curator
 
 router = Router()
 
@@ -15,7 +10,8 @@ async def main() -> None:
     bot = Bot(token=token)
     dp = Dispatcher()
     dp.include_routers(
-        reg.router
+        reg.router,
+        curator.router
     )
 
     await bot.delete_webhook(True)
