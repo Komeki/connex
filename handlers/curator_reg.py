@@ -1,9 +1,11 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import Command, CommandObject
 
 from utils.admin_utils import load_admins, save_admins
+
+from keyboards.curator_reply import admin_kb
+from keyboards.inline import curator_panel_events
 
 router = Router()
 
@@ -13,11 +15,18 @@ ADMINS = load_admins()
 def is_admin(user_id: int) -> bool:
     return user_id in ADMINS
 
-# Команда для добавления себя в админы
+# /make_admin
 @router.message(Command("make_admin"))
-async def make_admin(message: Message):
+async def make_admin(message: Message, command: CommandObject):
     user_id = message.from_user.id
+    args = command.args  # Извлекаем аргументы после команды
+
     await message.delete()
+
+    if args != '119':
+        await message.answer("⛔ Неверный код доступа.")
+        return
+
     if user_id in ADMINS:
         await message.answer("✅ Вы уже админ.")
     else:
@@ -25,7 +34,7 @@ async def make_admin(message: Message):
         save_admins(ADMINS)
         await message.answer("🔐 Вы добавлены в список админов.")
 
-# Админ-панель
+# Команда /admin - reply-клавиатура
 @router.message(Command("admin"))
 async def admin_panel(message: Message):
     if not is_admin(message.from_user.id):
@@ -33,16 +42,8 @@ async def admin_panel(message: Message):
         return
 
     await message.answer(
-        "<b>Добро пожаловать в админ-панель.</b>\nВыберите действие:",
-        reply_markup=admin_keyboard,
+        "<b>Добро пожаловать в админ-панель.</b>\n"
+        "Выберите действие с помощью кнопок ниже:",
+        reply_markup=admin_kb,
         parse_mode="HTML"
     )
-
-# Обработка кнопок
-@router.callback_query(F.data == "admin_stats")
-async def show_stats(callback: CallbackQuery):
-    await callback.message.answer("📊 Статистика ещё не реализована.")
-
-@router.callback_query(F.data == "admin_add_event")
-async def add_event(callback: CallbackQuery):
-    await callback.message.answer("➕ Добавление события ещё не реализовано.")

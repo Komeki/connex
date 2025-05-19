@@ -9,6 +9,9 @@ from keyboards import inline
 import re
 
 from utils.states import Reg
+from utils.reg_utils import is_registered
+from utils.reg_utils import register_user
+
 router = Router()
 
 VALID_CODES = ["SPECIAL"]
@@ -35,6 +38,11 @@ async def process_invalid_group_content_type(message: Message):
 #1 /reg - вход в состоние Reg.code для ввода специального кода
 @router.message(Command("reg"))
 async def start_registration(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if is_registered(user_id):
+        await message.answer("❌ Вы уже зарегистрированы.")
+        return
+    
     await state.set_state(Reg.code)
     await message.answer(
         "<b>Начало регистрации.</b>\n\n"
@@ -102,15 +110,22 @@ async def process_group(message: Message, state: FSMContext):
         f"<b>Введенные данные:</b>\n"
         f"ФИО: {data['name']}\n"
         f"Группа: {course}-{faculty}-{group}",
-        reply_markup=inline.confirm_keyboard(),
+        reply_markup=inline.confirm_reg(),
         parse_mode="HTML"
     )
 
 #5 Подтверждение данных - Выход из регистрации
 @router.callback_query(F.data == "confirm_profile")
 async def confirm_profile(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
+    
+    data = await state.get_data()
+    user_id = callback.from_user.id
 
+    # Сохраняем как зарегистрированного
+    register_user(user_id)
+
+    await state.clear()
     await callback.message.edit_text(
-        f"✅ <b>Регистрация завершена!</b>\n\n", parse_mode='HTML'
+        "✅ <b>Регистрация завершена!</b>",
+        parse_mode="HTML"
     )
