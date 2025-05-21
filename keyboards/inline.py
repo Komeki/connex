@@ -8,6 +8,14 @@ def confirm_reg():
     ]
 )
 
+def confirm_reg_admin():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_profile_admin")
+        ]
+    ]
+)
+
 def confirm_posts():
     return InlineKeyboardMarkup(inline_keyboard=[
         [

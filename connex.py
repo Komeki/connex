@@ -1,16 +1,18 @@
 import asyncio
 
-from TOKENZ import token
+from TOKENz import token
 from aiogram import Bot, Router, Dispatcher
 
+from callbacks import curator_events_callbacks
 from utils.database import init_db
 
 # Регистрация
-from handlers import student_reg, curator_reg
-# Захватчики сообщений
-from handlers import student, curator_panel
-# Обработчики кнопок
-from handlers import curator_events_callbacks
+from handlers import (
+    student_reg, curator_reg,
+    # Захватчики сообщений
+    student, curator_panel
+    # Обработчики кнопок
+)
 
 router = Router()
 

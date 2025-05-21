@@ -6,10 +6,16 @@ class Reg(StatesGroup):
     name = State()
     group = State()
 
+# Регистрация админа
+class AdminReg(StatesGroup):
+    waiting_for_fullname = State()
+    waiting_for_status = State()
+
 # Создание мероприятия и его перенос в БД
 class CreateEvent(StatesGroup):
     name = State()
     description = State()
-    time = State()
+    start_time = State()
+    end_time = State()
     location = State()
     image = State()
