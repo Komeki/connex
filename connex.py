@@ -4,7 +4,7 @@ from TOKENz import token
 from aiogram import Bot, Router, Dispatcher
 
 from utils.database import init_db, fill_majors
-from callbacks import curator_events_callbacks
+from callbacks import curator_events_callbacks, curator_send
 
 # Регистрация
 from handlers import (
@@ -24,6 +24,7 @@ async def main() -> None:
         curator_reg.router,
         student.router,
         curator_panel.router,
+        curator_send.router,
         curator_events_callbacks.router
     )
 

@@ -3,11 +3,11 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
 from utils.states import CreateEvent
-from utils.database import add_event
+from utils.database import add_event, get_event_by_id, get_events_paginated
 
-from keyboards.inline import confirm_posts
+from keyboards.inline import confirm_posts, start_mailing_kb, curator_panel_events
 from keyboards.curator_reply import admin_kb
-from keyboards.fabrics import event_list_kb, Pagination
+from keyboards.fabrics import event_list_kb, Pagination, generate_events_kb
 
 router = Router()
 
@@ -52,8 +52,10 @@ async def event_image(message: Message, state: FSMContext):
     add_event(
         name=data.get('name', 'Без имени'),
         description=data.get('description', ''),
-        time=data.get('start_date', ''),
+        start_date=data.get('start_date', ''),
+        duration=data.get('duration', ''),
         location=data.get('location', ''),
+        valid=data.get('valid', ''),
         image_id=photo_id
     )
 
@@ -152,7 +154,51 @@ async def list_events(callback: CallbackQuery):
 async def paginate(callback: CallbackQuery, callback_data: Pagination):
     await callback.answer()
     await callback.message.edit_reply_markup(reply_markup=event_list_kb(page=callback_data.page))
+# post preview
+@router.callback_query(F.data.startswith("event_"))
+async def event_preview(callback: CallbackQuery, state: FSMContext):
+    event_id = int(callback.data.split("_")[1])
+    event = get_event_by_id(event_id)
+    await state.update_data(event_list_msg_id=callback.message.message_id)
+    await state.update_data(event_id=event_id)
 
+    if not event:
+        await callback.answer("Мероприятие не найдено", show_alert=True)
+        return
+
+    post_text = (
+        f"<b>{event['name']}</b>\n\n"
+        f"{event['description']}\n\n"
+        f"🗓 <b>Время:</b> {event['start_date']}\n"
+        f"📍 <b>Место:</b> {event['location']}"
+    )
+
+    await callback.answer()
+
+    # Отправка поста
+    if event['image_id']:
+        await callback.message.answer_photo(
+            photo=event['image_id'],
+            caption=post_text,
+            reply_markup=start_mailing_kb(),
+            parse_mode="HTML"
+        )
+    else:
+        await callback.message.answer(post_text, reply_markup=start_mailing_kb(), parse_mode="HTML")
+
+    data = await state.get_data()
+    list_msg_id = data.get("event_list_msg_id")
+    if list_msg_id:
+        await callback.bot.delete_message(chat_id=callback.from_user.id, message_id=list_msg_id)
+
+# сохранение страницы при выводе мероприятия
+@router.callback_query(F.data == "go_back_to_events_list")
+async def back_to_events(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.edit_text(
+        "📋 Список мероприятий:",
+        reply_markup=event_list_kb(page=0)
+    )
 # ----------------------------------------------------------------------------
 
 # 3 Кнопка - Редактирование мероприятия

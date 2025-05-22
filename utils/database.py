@@ -82,17 +82,6 @@ def init_db():
     );
     """)
     
-    # Добавляем тестовые мероприятия
-    test_events = [
-        ("Лекция по Python", "Основы программирования", "2025-05-25 15:00", "-", "Ауд. 101", 1, None, 123456789),
-        ("Хакатон", "Соревнование по разработке", "2025-05-26 18:00", "-", "Коворкинг", 1, None, 123456789)
-    ]
-
-    cursor.executemany("""
-    INSERT OR IGNORE INTO events (name, description, start_date, duration, location, valid, image_id, curator_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, test_events)
-    
     conn.commit()
     conn.close()
 
@@ -273,20 +262,32 @@ def add_event(name, description, start_date, duration, location, valid, image_id
     conn.close()
 
 def get_available_events():
+    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
+    conn.row_factory = sqlite3.Row
     cursor.execute("""
-        SELECT id, name, start_date
-        FROM events
+        SELECT name, start_date FROM events
         WHERE valid = 1
-        ORDER BY start_date
+        ORDER BY start_date ASC
     """)
 
     events = cursor.fetchall()
     conn.close()
     return events  # список кортежей
 
+def get_event_by_id(event_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT name, description, start_date, location, image_id
+        FROM events
+        WHERE id = ?
+    """, (event_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 def get_events_paginated(offset=0, limit=5):
     conn = sqlite3.connect(DB_PATH)

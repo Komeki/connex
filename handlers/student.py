@@ -1,7 +1,8 @@
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 
+from keyboards.fabrics import event_list_kb, Pagination
 from keyboards.student_reply import student_main_kb
 from utils.roles import user
 from utils.database import (
@@ -13,6 +14,7 @@ from utils.database import (
 
 router = Router()
 
+# /menu
 @router.message(Command("menu"))
 @user
 async def student_menu(message: Message):
@@ -22,22 +24,26 @@ async def student_menu(message: Message):
         parse_mode="HTML"
     )
 
+# reply кнопка мероприятия
 @router.message(F.text == "📅 Мероприятия")
 async def show_events(message: Message):
     events = get_available_events()
-    
     if not events:
         await message.answer("🎉 На данный момент нет доступных мероприятий.")
         return
     
-    response = ["<b>📅 Доступные мероприятия:</b>\n"]
-    for event in events:
-        response.append(
-            f"\n<b>{event['name']}</b>\n"
-            f"📅 {event['start_date']}\n"
-        )
-    
-    await message.answer("\n".join(response), parse_mode="HTML")
+    await message.answer(
+        "📋 Доступные мероприятия:",
+        reply_markup=event_list_kb(page=0)
+    )
+
+# Обработка пагинации (общая для всех)
+@router.callback_query(Pagination.filter())
+async def paginate_events(callback: CallbackQuery, callback_data: Pagination):
+    await callback.answer()
+    await callback.message.edit_reply_markup(
+        reply_markup=event_list_kb(page=callback_data.page)
+    )
 
 @router.message(F.text == "📝 Мои регистрации")
 @user

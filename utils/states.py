@@ -21,3 +21,10 @@ class CreateEvent(StatesGroup):
     end_time = State()
     location = State()
     image = State()
+
+class Mailing(StatesGroup):
+    waiting_for_post = State()
+    preview = State()
+    filter_select = State()
+    filter_values = State()
+    confirm = State()

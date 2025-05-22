@@ -16,7 +16,7 @@ def major_select_kb(majors: list[str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for major in majors:
         builder.button(text=major, callback_data=major)
-    builder.adjust(4)
+    builder.adjust(2)
     return builder.as_markup()
 
 class Pagination(CallbackData, prefix="pag"):
@@ -54,5 +54,30 @@ def event_list_kb(page: int = 0) -> InlineKeyboardMarkup:
     
     if nav_buttons:
         builder.row(*nav_buttons, width=2)
+
+    return builder.as_markup()
+
+def generate_events_kb(events: list, page: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    # Кнопки мероприятий
+    for event in events:
+        event_id, name, start_date = event
+        builder.button(
+            text=f"{name} | {start_date}",
+            callback_data=f"event_{event_id}"
+        )
+
+    builder.adjust(1)  # по одной кнопке в строке
+
+    # Кнопки навигации
+    nav_buttons = []
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton(text="⬅️ Назад", callback_data=f"page_{page - 1}"))
+    if len(events) == EVENTS_PER_PAGE:
+        nav_buttons.append(InlineKeyboardButton(text="➡️ Далее", callback_data=f"page_{page + 1}"))
+
+    if nav_buttons:
+        builder.row(*nav_buttons)
 
     return builder.as_markup()
