@@ -2,25 +2,16 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
 
-from aiogram import Bot
-from aiogram.types import FSInputFile
-
 from keyboards.student_reply import student_main_kb
 from utils.roles import user
 from utils.database import (
     get_user_registrations,
     calculate_user_activity,
+    get_user_profile,
+    get_available_events
 )
 
 router = Router()
-
-@router.message(Command("secret"))
-async def send_circle(message: Message, bot: Bot):
-    video_note = FSInputFile("data/video.mp4")
-    await bot.send_video_note(
-        chat_id=message.chat.id,
-        video_note=video_note
-    )
 
 @router.message(Command("menu"))
 @user
@@ -31,24 +22,22 @@ async def student_menu(message: Message):
         parse_mode="HTML"
     )
 
-# @router.message(F.text == "📅 Мероприятия")
-# async def show_events(message: Message):
-#     events = get_available_events()
+@router.message(F.text == "📅 Мероприятия")
+async def show_events(message: Message):
+    events = get_available_events()
     
-#     if not events:
-#         await message.answer("🎉 На данный момент нет доступных мероприятий.")
-#         return
+    if not events:
+        await message.answer("🎉 На данный момент нет доступных мероприятий.")
+        return
     
-#     response = ["<b>📅 Доступные мероприятия:</b>\n"]
-#     for event in events:
-#         response.append(
-#             f"\n<b>{event['name']}</b>\n"
-#             f"📅 {event['time']}\n"
-#             f"📍 {event['location']}\n"
-#             f"{event['description']}"
-#         )
+    response = ["<b>📅 Доступные мероприятия:</b>\n"]
+    for event in events:
+        response.append(
+            f"\n<b>{event['name']}</b>\n"
+            f"📅 {event['start_date']}\n"
+        )
     
-#     await message.answer("\n".join(response), parse_mode="HTML")
+    await message.answer("\n".join(response), parse_mode="HTML")
 
 @router.message(F.text == "📝 Мои регистрации")
 @user
@@ -90,15 +79,15 @@ async def show_my_activity(message: Message):
 @router.message(F.text == "👤 Профиль")
 @user
 async def show_profile(message: Message):
-    from utils.database import get_user_profile, calculate_user_activity
-    
     profile = get_user_profile(message.from_user.id)
     stats = calculate_user_activity(message.from_user.id)
     telegram = message.from_user.username
     response = (
         f"<b>👤 Ваш профиль</b> — @{telegram}\n\n"
         f"🔹 <b>ФИО:</b> {profile['full_name']}\n"
-        f"🔹 <b>Группа:</b> {profile['course']}-{profile['faculty']}-{profile['group_num']}\n"
+        f"🔹 <b>Курс:</b> {profile['course']}\n"
+        f"🔹 <b>Направление:</b> {profile['major']}\n"
+        f"🔹 <b>Группа:</b> {profile['group_num']}\n"
         f"🔹 <b>Дата регистрации:</b> {profile['registration_date']}\n\n"
         f"<b>Активность:</b>\n"
         f"• Посещено мероприятий: {stats['attended_count']}\n"

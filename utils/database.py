@@ -9,14 +9,14 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Создаем таблицы
+    # users
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
         telegram TEXT,
         full_name TEXT,
         course TEXT,
-        faculty TEXT,
+        major TEXT,
         group_num TEXT,
         organisation TEXT,
         registration_date TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -24,6 +24,7 @@ def init_db():
     );
     """)
     
+    #admins
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS admins (
         user_id INTEGER PRIMARY KEY,
@@ -32,6 +33,7 @@ def init_db():
     );
         """)
     
+    #events
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +48,26 @@ def init_db():
         FOREIGN KEY (curator_id) REFERENCES users(user_id)
     );
     """)
-    
+
+    #organisations
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS organisations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_name TEXT NOT NULL,
+            org_desc TEXT
+        )
+    """)
+
+    #majors
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS majors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            major_name TEXT NOT NULL,
+            major_desc TEXT
+        )
+    """)
+
+    #registrations
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS registrations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,20 +104,12 @@ def does_user_exists(user_id: int) -> bool:
     conn.close()
     return result is not None
 
-def is_curator(user_id: int) -> bool:
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM admins WHERE user_id = ? LIMIT 1", (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-    return result is not None
-
 def register_user(
     user_id: int,
     telegram: str,
     full_name: str,
     course: str,
-    faculty: str,
+    major: str,
     group_num: str,
     organisation: str,
     curator: int
@@ -106,14 +119,14 @@ def register_user(
     cursor = conn.cursor()
     cursor.execute("""
         INSERT OR REPLACE INTO users 
-        (user_id, telegram, full_name, course, faculty, group_num, organisation, registration_date, curator)
+        (user_id, telegram, full_name, course, major, group_num, organisation, registration_date, curator)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         user_id,
         telegram,
         full_name,
         course,
-        faculty,
+        major,
         group_num,
         organisation,
         registration_date,
@@ -121,6 +134,49 @@ def register_user(
     ))
     conn.commit()
     conn.close()
+
+def get_majors_list():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT major_name FROM majors ORDER BY major_name")
+    majors = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return majors
+
+def fill_majors():
+    majors = [
+        ("АФ", "Архитектурный факультет"),
+        ("ФД", "Факультет дизайна"),
+        ("ФИСПОС", "Факультет инженерных систем и природоохранного строительства"),
+        ("СТФ", "Строительно-технологический факультет"),
+        ("ФПГС", "Факультет промышленного и гражданского строительства"),
+        ("ИАИТ", "Институт автоматики и информационных технологий"),
+        ("ИИЭГО", "Институт инженерно-экономического и гуманитарного образования"),
+        ("ИНГТ", "Институт нефтегазовых технологий"),
+        ("ФПП", "Факультет пищевых производств"),
+        ("ИТФ", "Инженерно-технологический факультет"),
+        ("ТЭФ", "Теплоэнергетический факультет"),
+        ("ФММТ", "Факультет машиностроения, металлургии и транспорта"),
+        ("ХТФ", "Химико-технологический факультет"),
+        ("ЭТФ", "Электротехнический факультет")
+    ]
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    for short, full in majors:
+        cursor.execute(
+            "INSERT INTO majors (major_name, major_desc) VALUES (?, ?)", (short, full)
+        )
+    conn.commit()
+    conn.close()
+
+def is_curator(user_id: int) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM admins WHERE user_id = ? LIMIT 1", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None
 
 def save_admin(user_id: int, full_name: str, status_text: str):
     conn = sqlite3.connect(DB_PATH)
@@ -147,7 +203,7 @@ def get_user_profile(user_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-    SELECT full_name, course, faculty, group_num, registration_date 
+    SELECT full_name, course, major, group_num, registration_date 
     FROM users 
     WHERE user_id = ?
     """, (user_id,))
@@ -156,7 +212,7 @@ def get_user_profile(user_id):
     return {
         'full_name': row[0],
         'course': row[1],
-        'faculty': row[2],
+        'major': row[2],
         'group_num': row[3],
         'registration_date': row[4]
     } if row else None
@@ -215,6 +271,22 @@ def add_event(name, description, start_date, duration, location, valid, image_id
     """, (name, description, start_date, duration, location, valid, image_id))
     conn.commit()
     conn.close()
+
+def get_available_events():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, name, start_date
+        FROM events
+        WHERE valid = 1
+        ORDER BY start_date
+    """)
+
+    events = cursor.fetchall()
+    conn.close()
+    return events  # список кортежей
+
 
 def get_events_paginated(offset=0, limit=5):
     conn = sqlite3.connect(DB_PATH)

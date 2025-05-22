@@ -3,8 +3,8 @@ import asyncio
 from TOKENz import token
 from aiogram import Bot, Router, Dispatcher
 
+from utils.database import init_db, fill_majors
 from callbacks import curator_events_callbacks
-from utils.database import init_db
 
 # Регистрация
 from handlers import (
@@ -32,4 +32,5 @@ async def main() -> None:
 
 if __name__ == "__main__":
     init_db()
+    # fill_majors()
     asyncio.run(main())

@@ -4,6 +4,8 @@ from aiogram.fsm.state import StatesGroup, State
 class Reg(StatesGroup):
     code = State()
     name = State()
+    course = State()
+    major = State()
     group = State()
 
 # Регистрация админа
@@ -11,7 +13,7 @@ class AdminReg(StatesGroup):
     waiting_for_fullname = State()
     waiting_for_status = State()
 
-# Создание мероприятия и его перенос в БД
+# Создание мероприятия
 class CreateEvent(StatesGroup):
     name = State()
     description = State()

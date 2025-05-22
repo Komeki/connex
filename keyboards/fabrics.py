@@ -3,6 +3,22 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from utils.database import get_events_paginated
 
+# ✅ Клавиатура выбора курса
+def course_select_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for k in range(1, 7):
+        builder.button(text=f"{k}", callback_data=f"course_{k}")
+    builder.adjust(6)
+    return builder.as_markup()
+
+# ✅ Клавиатура выбора направления
+def major_select_kb(majors: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for major in majors:
+        builder.button(text=major, callback_data=major)
+    builder.adjust(4)
+    return builder.as_markup()
+
 class Pagination(CallbackData, prefix="pag"):
     action: str
     page: int
