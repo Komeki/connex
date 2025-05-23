@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
@@ -161,7 +161,6 @@ async def event_preview(callback: CallbackQuery, state: FSMContext):
     event = get_event_by_id(event_id)
     await state.update_data(event_list_msg_id=callback.message.message_id)
     await state.update_data(event_id=event_id)
-
     if not event:
         await callback.answer("Мероприятие не найдено", show_alert=True)
         return
@@ -190,12 +189,15 @@ async def event_preview(callback: CallbackQuery, state: FSMContext):
     list_msg_id = data.get("event_list_msg_id")
     if list_msg_id:
         await callback.bot.delete_message(chat_id=callback.from_user.id, message_id=list_msg_id)
-
-# сохранение страницы при выводе мероприятия
+# кнопка назад
 @router.callback_query(F.data == "go_back_to_events_list")
-async def back_to_events(callback: CallbackQuery):
+async def back_to_events(callback: CallbackQuery, bot: Bot):
     await callback.answer()
-    await callback.message.edit_text(
+    await bot.delete_message(
+            chat_id=callback.message.chat.id,
+            message_id=callback.message.message_id
+        )
+    await callback.message.answer(
         "📋 Список мероприятий:",
         reply_markup=event_list_kb(page=0)
     )

@@ -289,6 +289,19 @@ def get_event_by_id(event_id: int):
     conn.close()
     return dict(row) if row else None
 
+def get_all_groups(course: int, major: str) -> list[str]:
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT group_num FROM users
+        WHERE course = ? AND major = ?
+        ORDER BY group_num
+    """, (course, major))
+    groups = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return groups
+
 def get_events_paginated(offset=0, limit=5):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

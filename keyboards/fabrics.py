@@ -3,7 +3,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from utils.database import get_events_paginated
 
-# ✅ Клавиатура выбора курса
+# ✅ Клавиатура выбора курса для регистрации
 def course_select_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for k in range(1, 7):
@@ -11,7 +11,7 @@ def course_select_kb() -> InlineKeyboardMarkup:
     builder.adjust(6)
     return builder.as_markup()
 
-# ✅ Клавиатура выбора направления
+# ✅ Клавиатура выбора направления для регистрации
 def major_select_kb(majors: list[str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for major in majors:
@@ -80,4 +80,27 @@ def generate_events_kb(events: list, page: int) -> InlineKeyboardMarkup:
     if nav_buttons:
         builder.row(*nav_buttons)
 
+    return builder.as_markup()
+
+def course_select_post_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    # Кнопки 1–6
+    for k in range(1, 7):
+        builder.button(text=f"{k}", callback_data=f"course_{k}")
+    builder.adjust(6)
+
+    # Кнопка назад
+    builder.row(
+        InlineKeyboardButton(text="⬅ Назад", callback_data="back_to_filters")
+    )
+
+    return builder.as_markup()
+
+# ✅ Клавиатура выбора направления для создания поста
+def major_select_post_kb(majors: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for major in majors:
+        builder.button(text=major, callback_data=major)
+    builder.adjust(2)
     return builder.as_markup()
