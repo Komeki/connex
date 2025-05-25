@@ -6,7 +6,7 @@ from aiogram.types import (
 # Меню студента
 student_main_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📅 Мероприятия"), KeyboardButton(text="📝 Мои регистрации")],
+        [KeyboardButton(text="📝 Мои регистрации")],
         [KeyboardButton(text="📈 Моя активность")],
         [KeyboardButton(text="👤 Профиль")],  
     ],

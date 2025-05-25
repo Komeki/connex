@@ -1,13 +1,14 @@
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram.fsm.context import FSMContext
 
-from utils.states import CreateEvent
-from utils.database import add_event, get_event_by_id, get_events_paginated
 
-from keyboards.inline import confirm_posts, start_mailing_kb, curator_panel_events
+from utils.states import CreateEvent, Mailing
+from utils.database import add_event, get_event_by_id, export_registrations_to_excel
+
+from keyboards.inline import confirm_posts, start_mailing_kb
 from keyboards.curator_reply import admin_kb
-from keyboards.fabrics import event_list_kb, Pagination, generate_events_kb
+from keyboards.fabrics import event_list_kb, Pagination
 
 router = Router()
 
@@ -46,27 +47,19 @@ async def event_location(message: Message, state: FSMContext):
 @router.message(F.photo)
 async def event_image(message: Message, state: FSMContext):
     photo_id = message.photo[-1].file_id
+    curator_id = message.from_user.id
 
     data = await state.get_data()
-
-    add_event(
-        name=data.get('name', 'Без имени'),
-        description=data.get('description', ''),
-        start_date=data.get('start_date', ''),
-        duration=data.get('duration', ''),
-        location=data.get('location', ''),
-        valid=data.get('valid', ''),
-        image_id=photo_id
-    )
+    
+    # Сохраняем photo_id в состоянии для последующего использования
+    await state.update_data(photo_id=photo_id, curator_id=curator_id)
 
     post_text = (
         f"<b>{data.get('name', 'Без имени')}</b>\n\n"
         f"{data.get('description', '')}\n\n"
-        f"🕒 <b>Время:</b> {data.get('start_time', '')}\n"
+        f"🕒 <b>Время:</b> {data.get('start_date', '')}\n"
         f"📍 <b>Место:</b> {data.get('location', '')}"
     )
-
-    await state.clear()
 
     # Отправляем пост с фото и текстом
     msg_post = await message.answer_photo(
@@ -84,59 +77,66 @@ async def event_image(message: Message, state: FSMContext):
         reply_markup=confirm_posts(),
         reply_to_message_id=msg_post.message_id
     )
-# Подтверждение и удаление сообщений - 1
+
+# Подтверждение сохранения поста
 @router.callback_query(F.data == "confirm_post")
-async def confirmpost(callback: CallbackQuery, state: FSMContext):
+async def confirm_post(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
-
-    data = await state.get_data()
-    post_msg_id = data.get('post_msg_id')
-
-    # Удаляем сообщение с кнопкой "Сохранить пост?"
-    await callback.message.delete()
-
-    # Удаляем сообщение с постом
-    await callback.message.bot.delete_message(
-        chat_id=callback.message.chat.id,
-        message_id=post_msg_id
-    )
     
+    data = await state.get_data()
+    
+    # Добавляем мероприятие в БД
     add_event(
         name=data.get('name', 'Без имени'),
         description=data.get('description', ''),
-        start_time=data.get('start_time', ''),
+        start_date=data.get('start_date', ''),
+        duration=data.get('duration', ''),
         location=data.get('location', ''),
-        image_id=data.get('photo_id', ''),
-        valid=data.get(1, ''),
+        valid=1,
+        image_id=data.get('photo_id'),
+        curator_id=data.get('curator_id')
     )
     
-    # Отправляем новое сообщение без reply_to_message_id
+    # Удаляем сообщение с кнопкой подтверждения
+    await callback.message.delete()
+    
+    # Отправляем подтверждение сохранения
     await callback.message.answer(
         "Пост сохранен ✅",
         reply_markup=admin_kb
     )
-# Отмена и удаление сообщений - 2
-@router.callback_query(F.data == "cancel_post")
-async def confirmpost(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
+    
+    # Очищаем состояние
+    await state.clear()
 
+# Отмена сохранения поста
+@router.callback_query(F.data == "cancel_post")
+async def cancel_post(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    
     data = await state.get_data()
     post_msg_id = data.get('post_msg_id')
-
-    # Удаляем сообщение с кнопкой "Сохранить пост?"
-    await callback.message.delete()
-
-    # Удаляем сообщение с постом
-    await callback.message.bot.delete_message(
-        chat_id=callback.message.chat.id,
-        message_id=post_msg_id
-    )
     
-    # Отправляем новое сообщение без reply_to_message_id
+    # Удаляем сообщение с кнопкой подтверждения
+    await callback.message.delete()
+    
+    # Удаляем сообщение с постом (если нужно)
+    try:
+        await callback.message.bot.delete_message(
+            chat_id=callback.message.chat.id,
+            message_id=post_msg_id
+        )
+    except Exception as e:
+        print(f"Не удалось удалить сообщение: {e}")
+    
+    # Отправляем уведомление об отмене
     await callback.message.answer(
-        "Пост сохранен ✅",
+        "Создание поста отменено",
         reply_markup=admin_kb
     )
+    
+    # Очищаем состояние
+    await state.clear()
 
 # ----------------------------------------------------------------------------
 
@@ -182,6 +182,7 @@ async def event_preview(callback: CallbackQuery, state: FSMContext):
             reply_markup=start_mailing_kb(),
             parse_mode="HTML"
         )
+        await state.set_state(Mailing.filter_select)
     else:
         await callback.message.answer(post_text, reply_markup=start_mailing_kb(), parse_mode="HTML")
 
@@ -202,15 +203,28 @@ async def back_to_events(callback: CallbackQuery, bot: Bot):
         reply_markup=event_list_kb(page=0)
     )
 # ----------------------------------------------------------------------------
-
-# 3 Кнопка - Редактирование мероприятия
-@router.callback_query(F.data == "curator_edit_event")
-async def edit_event(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.answer("📦 Выполнить рассылку")
-
-# 4 Кнопка - Редактирование мероприятия
-@router.callback_query(F.data == "curator_delete_event")
-async def delete_event(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.answer("❌ Удаление мероприятия")
+@router.callback_query(F.data == "export_registrations")
+async def export_registrations_handler(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    event_id = data.get('event_id')
+    
+    if not event_id:
+        await callback.answer("Мероприятие не выбрано", show_alert=True)
+        return
+    
+    try:
+        # Создаем файл
+        filepath = export_registrations_to_excel(event_id)
+        
+        # Отправляем файл пользователю
+        file = FSInputFile(filepath)
+        await callback.message.answer_document(
+            document=file,
+            caption=f"Регистрации на мероприятие"
+        )
+        
+        # Удаляем временный файл
+        filepath.unlink()
+        
+    except Exception as e:
+        await callback.answer(f"Ошибка экспорта: {str(e)}", show_alert=True)

@@ -58,10 +58,7 @@ async def show_my_registrations(message: Message):
     for reg in registrations:
         status = "✅ Посещено" if reg['attended'] else "🕒 Запланировано"
         response.append(
-            f"\n<b>{reg['event_name']}</b>\n"
-            f"📅 {reg['event_time']}\n"
-            f"📍 {reg['event_location']}\n"
-            f"Статус: {status}"
+            f"\n<b>🔥 {reg['event_name']}</b>\n"
         )
     
     await message.answer("\n".join(response), parse_mode="HTML")
@@ -77,7 +74,7 @@ async def show_my_activity(message: Message):
         f"🔹 Запланировано: {stats['missed_count']}\n"
         f"🔹 Процент посещаемости: {stats['attendance_rate']}%\n"
         f"🔹 Всего баллов: {stats['total_points']}\n\n"
-        f"<i>10 баллов за каждое посещенное мероприятие</i>"
+        f"<i>100 баллов за каждое посещенное мероприятие</i>"
     )
     
     await message.answer(response, parse_mode="HTML")

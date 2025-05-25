@@ -3,7 +3,7 @@ import asyncio
 from TOKENz import token
 from aiogram import Bot, Router, Dispatcher
 
-from utils.database import init_db, fill_majors
+from utils.database import init_db#, fill_majors
 from callbacks import curator_events_callbacks, curator_send
 
 # Регистрация

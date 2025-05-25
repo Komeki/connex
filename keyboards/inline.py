@@ -30,7 +30,6 @@ def curator_panel_events():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📝 Создать мероприятие", callback_data="curator_create_event")],
         [InlineKeyboardButton(text="📋 Список моих мероприятий", callback_data="curator_list_events")],
-        [InlineKeyboardButton(text="📦 Выполнить рассылку", callback_data="curator_edit_event")],
         [InlineKeyboardButton(text="❌ Удалить мероприятие", callback_data="curator_delete_event")],
     ])
 
@@ -38,6 +37,7 @@ def start_mailing_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="🚀 Перейти к рассылке", callback_data="start_mailing")],
+            [InlineKeyboardButton(text="📦 Выполнить экспорт", callback_data="export_registrations")],
             [InlineKeyboardButton(text="⏪ Назад", callback_data="go_back_to_events_list")]
         ]
     )

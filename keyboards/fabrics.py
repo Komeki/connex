@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
-from utils.database import get_events_paginated
+from utils.database import get_events_paginated, get_majors_list, get_users_by_filters, get_event_by_id
 
 # ✅ Клавиатура выбора курса для регистрации
 def course_select_kb() -> InlineKeyboardMarkup:
@@ -33,7 +33,7 @@ def paginator(page: int=0):
     return builder.as_markup()
 
 EVENTS_PER_PAGE = 5
-def event_list_kb(page: int = 0) -> InlineKeyboardMarkup:
+def event_list_kb(page: int = 0) -> InlineKeyboardMarkup:   
     events = get_events_paginated(offset=page * EVENTS_PER_PAGE, limit=EVENTS_PER_PAGE)
     builder = InlineKeyboardBuilder()
 
@@ -97,10 +97,73 @@ def course_select_post_kb() -> InlineKeyboardMarkup:
 
     return builder.as_markup()
 
-# ✅ Клавиатура выбора направления для создания поста
-def major_select_post_kb(majors: list[str]) -> InlineKeyboardMarkup:
+def major_select_post_kb(selected=None):
+    if selected is None:
+        selected = []
+    
+    # Получаем список направлений из БД
+    majors = get_majors_list()
+    
+    # Создаем билдер
     builder = InlineKeyboardBuilder()
+    
+    # Добавляем кнопки направлений
     for major in majors:
-        builder.button(text=major, callback_data=major)
+        builder.button(
+            text=f"{'✅ ' if major in selected else ''}{major}",
+            callback_data=f"major_{major}"
+        )
+    
+    # Разбиваем на ряды по 3 кнопки
     builder.adjust(2)
+    
+    # Добавляем кнопки управления
+    builder.row(
+        InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_filters")
+    )
+    
+    return builder.as_markup()
+
+async def confirm_mailing_kb(event_id: int, filters: dict):
+    # Получаем количество пользователей для рассылки
+    users_count = len(get_users_by_filters(filters))
+    event = get_event_by_id(event_id)
+    
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(
+        InlineKeyboardButton(
+            text=f"✅ Подтвердить ({users_count} чел.)",
+            callback_data=f"confirm_mailing_{event_id}"
+        ),
+        InlineKeyboardButton(
+            text="✏️ Изменить фильтры",
+            callback_data="edit_filters"
+        )
+    )
+    builder.adjust(1)
+    
+    return builder.as_markup()
+
+def register_button(event_id: int, is_registered: bool = False) -> InlineKeyboardMarkup:
+    """
+    Создает кнопку регистрации на мероприятие
+    
+    :param event_id: ID мероприятия
+    :param is_registered: Флаг, зарегистрирован ли уже пользователь
+    :return: InlineKeyboardMarkup с одной кнопкой
+    """
+    builder = InlineKeyboardBuilder()
+    
+    if is_registered:
+        builder.button(
+            text="✅ Вы зарегистрированы", 
+            callback_data="already_registered"
+        )
+    else:
+        builder.button(
+            text="📝 Зарегистрироваться", 
+            callback_data=f"register_{event_id}"
+        )
+    
     return builder.as_markup()
